@@ -1,0 +1,139 @@
+**Basic Aggregation Formulas**
+
+--SUM – Adds up values in a column.--
+Total Sales = SUM(Sales[SalesAmount])
+
+--AVERAGE – Calculates the average value in a column.--
+Avg Sales = AVERAGE(Sales[SalesAmount])
+
+--COUNT – Counts the number of rows in a column.--
+Total Orders = COUNT(Sales[OrderID])
+
+--DISTINCTCOUNT – Counts unique values in a column.--
+Unique Customers = DISTINCTCOUNT(Sales[CustomerID])
+
+-----------------------------------------------------
+
+**Logical & Conditional Formulas**
+
+--IF – Returns different values based on a condition.--
+High Sales = IF(Sales[SalesAmount] > 5000, "High", "Low")
+
+--SWITCH – Works like a case statement in SQL.--
+Sales Category = SWITCH(
+    TRUE(),
+    Sales[SalesAmount] > 10000, "Premium",
+    Sales[SalesAmount] > 5000, "Gold",
+    "Standard"
+)
+
+--AND / OR – Combines multiple conditions.--
+Big Deal = IF(AND(Sales[SalesAmount] > 5000, Sales[Profit] > 1000), "Yes", "No")
+
+----------------------------------------------------------------------------------
+
+**Date & Time Functions**
+
+--TODAY / NOW – Returns the current date or timestamp.--
+Current Date = TODAY()
+Current Timestamp = NOW()
+
+--DATEDIFF – Calculates the difference between two dates.--
+Days Between = DATEDIFF(Sales[OrderDate], Sales[ShipDate], DAY)
+
+--EOMONTH – Returns the end of the month.--
+Month End Date = EOMONTH(Sales[OrderDate], 0)
+
+--YEAR, MONTH, DAY – Extracts date parts.--
+Order Year = YEAR(Sales[OrderDate])
+Order Month = MONTH(Sales[OrderDate])
+Order Day = DAY(Sales[OrderDate])
+
+--PREVIOUSMONTH, NEXTMONTH – Gets values for the previous or next month.--
+Last Month Sales = CALCULATE(SUM(Sales[SalesAmount]), PREVIOUSMONTH(Sales[OrderDate]))
+
+---------------------------------------------------------------------------------------
+
+**Running Totals & Moving Averages**
+
+--RUNNING TOTAL – Calculates a cumulative sum.--
+Running Total Sales = 
+CALCULATE(
+    SUM(Sales[SalesAmount]),
+    FILTER(ALL(Sales[OrderDate]), Sales[OrderDate] <= MAX(Sales[OrderDate]))
+)
+
+--MOVING AVERAGE (Rolling 3 Months)--
+Rolling 3M Avg Sales =
+AVERAGEX(
+    DATESINPERIOD(Sales[OrderDate], LASTDATE(Sales[OrderDate]), -3, MONTH),
+    CALCULATE(SUM(Sales[SalesAmount]))
+)
+
+----------------------------------------------------------------------------------
+
+**Filtering & Context Modifiers**
+
+--ALL – Ignores all filters.--
+Total Sales (Ignoring Filters) = CALCULATE(SUM(Sales[SalesAmount]), ALL(Sales))
+
+--ALLSELECTED – Ignores filters except for the selected visual context.--
+Selected Sales = CALCULATE(SUM(Sales[SalesAmount]), ALLSELECTED(Sales[Region]))
+
+--FILTER – Applies a filter inside a calculation.--
+High Value Sales = 
+CALCULATE(SUM(Sales[SalesAmount]), FILTER(Sales, Sales[SalesAmount] > 10000))
+
+----------------------------------------------------------------------------------
+
+**Ranking & Percentile Calculations**
+
+--RANKX – Ranks values based on a measure.--
+Sales Rank = RANKX(ALL(Sales), SUM(Sales[SalesAmount]), , DESC, DENSE)
+
+--PERCENTILEX.INC – Calculates a percentile.--
+90th Percentile Sales = PERCENTILEX.INC(Sales, Sales[SalesAmount], 0.9)
+
+---------------------------------------------------------------------------------
+
+**Text Functions**
+
+--CONCATENATE – Joins two text strings.--
+Full Name = CONCATENATE(Employees[FirstName], " " & Employees[LastName])
+
+--SEARCH – Finds the position of a text string.--
+Find @ Position = SEARCH("@", Customers[Email], , BLANK())
+
+--FORMAT – Formats values into a readable string.--
+Formatted Sales = FORMAT(SUM(Sales[SalesAmount]), "Currency")
+
+---------------------------------------------------------------------------------
+
+**Advanced Measures**
+
+--CALCULATE with Multiple Filters--
+Sales in USA = CALCULATE(SUM(Sales[SalesAmount]), Sales[Country] = "USA")
+
+--YOY (Year-over-Year) Growth--
+YoY Growth = 
+CALCULATE(SUM(Sales[SalesAmount]), SAMEPERIODLASTYEAR(Sales[OrderDate])) 
+- SUM(Sales[SalesAmount])
+
+--Margin % Calculation--
+Margin % = DIVIDE(SUM(Sales[Profit]), SUM(Sales[SalesAmount]), 0)
+
+-------------------------------------------------------------------------------
+
+**Combining DAX Functions**
+
+--If you want to create a measure for Sales Performance Category based on percentile rankings:--
+Sales Performance = 
+SWITCH(
+    TRUE(),
+    [Total Sales] >= PERCENTILEX.INC(ALL(Sales), [Total Sales], 0.9), "Top 10%",
+    [Total Sales] >= PERCENTILEX.INC(ALL(Sales), [Total Sales], 0.75), "Top 25%",
+    [Total Sales] >= PERCENTILEX.INC(ALL(Sales), [Total Sales], 0.5), "Top 50%",
+    "Bottom 50%"
+)
+
+
