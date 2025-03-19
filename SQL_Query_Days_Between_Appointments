@@ -1,0 +1,23 @@
+SELECT 
+    r.id, 
+    r.referral_date, 
+    a.appt_date,
+    DATEDIFF(a.appt_date, r.referral_date) AS days_between,  -- Calculate the difference in days
+    COUNT(CASE WHEN a.appt_date IS NULL THEN 1 END) OVER () AS no_appointments_yet  -- Count those without an appointment
+FROM 
+    referrals r
+LEFT JOIN 
+    appt_data a 
+ON 
+    r.id = a.id 
+    AND a.appt_date >= r.referral_date
+WHERE 
+    r.referral_date >= DATEADD(MONTH, -1, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) 
+    AND r.referral_date < DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)
+ORDER BY 
+    r.id;
+
+--In SQL Server:--
+
+--DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 1, 0) gives the first day of the previous month.--
+--DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) gives the first day of the current month.--
