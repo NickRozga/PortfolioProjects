@@ -52,6 +52,27 @@ Order Day = DAY(Sales[OrderDate])
 --PREVIOUSMONTH, NEXTMONTH – Gets values for the previous or next month.--
 Last Month Sales = CALCULATE(SUM(Sales[SalesAmount]), PREVIOUSMONTH(Sales[OrderDate]))
 
+--Adjust Date Filters (Optional):--
+
+In Power BI, create a Date table that spans all your date ranges (e.g., from the first referral date to the last date of data). This will allow you to filter dynamically based on any month or date range. 
+Click on "Modeling" in the top menu and select "New Table" to create a Date Table:
+DateTable = CALENDAR(MIN('YourTable'[referral_date]), TODAY())
+This will create a Date Table based on the range of referral dates in your data.
+
+Filter by the Previous Month:
+
+To ensure the report only shows the data for the previous month, you can create a DAX measure to filter this.
+Go to the "Modeling" tab and click "New Measure", and create a measure like:
+PreviousMonth = 
+
+IF(
+    MONTH(TODAY()) = MONTH('YourTable'[referral_date]) - 1, 
+    "Yes", 
+    "No"
+)
+
+Then, you can use this measure to filter the visuals or set it as a slicer for users to view only the previous month's data.
+
 ---------------------------------------------------------------------------------------
 
 **Running Totals & Moving Averages**
@@ -136,4 +157,11 @@ SWITCH(
     "Bottom 50%"
 )
 
+--------------------------------------------------------------------------------------------------
+
+**Add Dynamic Titles/Headers (Optional):**
+
+You can add dynamic titles or headers that indicate the specific month being shown (e.g., "March 2024 Referral Data").
+Use DAX to create a dynamic header:
+ReportTitle = "Referral Data for " & FORMAT(TODAY(), "MMMM YYYY")
 
