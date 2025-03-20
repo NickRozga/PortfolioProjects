@@ -1,0 +1,204 @@
+*****Excel VBA Macros for Data Submission Review and Approval*****
+
+*****Use case would be reviewing data submissions for HEDIS measures, CMS, etc. 
+and automatically tracking submissions for compliance and audit trails. This
+provides centralized record for monitoring, reviewing, and updating submission statuses.*****
+
+Full VBA code solution that includes macros for:
+1. Importing XML data from submission portal
+2. Logging data submissions into a "Submission Log" worksheet.
+3. Updating submission and error statuses automatically.
+4. Filtering unresolved errors for easy tracking.
+5. Sending email notifications via Outlook for unresolved errors.
+
+Steps to Implement:
+1. Create an Excel file this worksheet:
+    "Submission Log" (for tracking submissions)
+2. Code the following macros with VBA code into modules
+3. Add command buttons on the Excel sheet and link them to the macros.
+   - Add buttons in Excel (Developer → Insert → Button).
+   - Assign the below macros to the respective buttons.
+   - Use Excel input fields (B2, B3, C2, C3, D2,) for entering file names, error types, and statuses.
+   - Click buttons to log, update, filter, or send reports.
+
+1. Import XML -	Load XML submission data into Excel	- Macro: ImportXMLData
+2. Log Submission	- Store details in tracking sheet	- Marco: LogXMLSubmission
+3. Review & Decide - Enter Accepted/Rejected in Excel field B2 - Macro: UpdateSubmissionStatus
+4. Filter Rejected	- View only rejected submissions	- Macro: FilterRejectedSubmissions
+5. Send Rejection Email -	Notify teams of rejected files	- Macro: SendRejectionEmail
+
+--------------------------------------------------------------------------------------------------------------
+
+VBA CODE:
+
+1.
+Import XML with Custom File Naming: 
+This lets you choose any XML file and automatically updates the worksheet.
+
+Sub ImportXMLData()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("XML Data") ' Ensure this sheet exists
+
+    Dim xmlFilePath As String
+    xmlFilePath = Application.GetOpenFilename("XML Files (*.xml), *.xml", , "Select XML File")
+
+    If xmlFilePath = "False" Then Exit Sub ' If user cancels file selection
+
+    ' Clear existing data before importing new XML
+    ws.Cells.Clear
+
+    ' Import XML data into worksheet
+    With ws.QueryTables.Add(Connection:="TEXT;" & xmlFilePath, Destination:=ws.Range("A1"))
+        .TextFilePlatform = xlWindows
+        .TextFileConsecutiveDelimiter = False
+        .TextFileTabDelimiter = True
+        .Refresh
+    End With
+
+    ' Extract File Name (without full path)
+    Dim fileName As String
+    fileName = Mid(xmlFilePath, InStrRev(xmlFilePath, "\") + 1)
+
+    ' Store the file name in cell A1 for reference
+    ws.Cells(1, 1).Value = "File Name:"
+    ws.Cells(1, 2).Value = fileName
+
+    MsgBox "XML Data Imported Successfully: " & fileName, vbInformation, "Import Complete"
+End Sub
+
+
+2. 
+Log XML Submission Details:
+Once the XML is imported, this macro logs submission details (File Name, Timestamp, and Initial Status).
+
+Sub LogXMLSubmission()
+    Dim wsLog As Worksheet
+    Dim wsData As Worksheet
+    Set wsLog = ThisWorkbook.Sheets("Submission Log")
+    Set wsData = ThisWorkbook.Sheets("XML Data")
+
+    Dim lastRow As Long
+    lastRow = wsLog.Cells(wsLog.Rows.Count, 1).End(xlUp).Row + 1 ' Find next empty row
+
+    ' Capture submission details
+    wsLog.Cells(lastRow, 1).Value = Now ' Timestamp
+    wsLog.Cells(lastRow, 2).Value = Environ("Username") ' User submitting
+    wsLog.Cells(lastRow, 3).Value = wsData.Cells(1, 1).Value ' XML File Name (assuming it's in A1)
+    wsLog.Cells(lastRow, 4).Value = "Pending Review" ' Default status
+
+    MsgBox "Submission Logged Successfully!", vbInformation, "Logged"
+End Sub
+
+
+3.
+Accept/Reject Submissions:
+This macro allows manual acceptance or rejection of a submission using an Excel input field.
+The user selects the xml file. 
+The macro finds the entry and updates the status using Excel field B2 (where you enter "Accepted" or "Rejected").
+
+Sub UpdateSubmissionStatus()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Submission Log")
+
+    Dim filePath As String
+    Dim fileName As String
+    Dim lastRow As Long
+    Dim i As Long
+
+    ' Open File Dialog to Select the XML File
+    filePath = Application.GetOpenFilename("XML Files (*.xml), *.xml", , "Select XML Submission File")
+
+    ' If user cancels file selection, exit
+    If filePath = "False" Then Exit Sub
+
+    ' Extract only the file name from the full path
+    fileName = Mid(filePath, InStrRev(filePath, "\") + 1)
+
+    ' Get the last row in Submission Log
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+    ' Loop through the log to find the corresponding file
+    For i = 2 To lastRow
+        If ws.Cells(i, 3).Value = fileName Then ' Check if file exists in log
+            ws.Cells(i, 4).Value = Range("B2").Value ' Update status using input from B2
+            MsgBox "Submission status updated for: " & fileName, vbInformation, "Update Successful"
+            Exit Sub
+        End If
+    Next i
+
+    ' If file is not found
+    MsgBox "File not found in Submission Log: " & fileName, vbCritical, "Update Failed"
+End Sub
+
+
+
+4. 
+Filter Only Rejected Submissions
+If you need to quickly view only rejected files, this macro filters them.
+After running, only rejected files will appear in the "Submission Log" sheet.
+
+Sub FilterRejectedSubmissions()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Submission Log")
+
+    ws.Range("A1:D1").AutoFilter Field:=4, Criteria1:="Rejected"
+
+    MsgBox "Filtered to show only rejected submissions.", vbInformation, "Filtered"
+End Sub
+
+
+5. 
+Send Rejection Notification via Email
+If a submission is rejected, this macro sends an automated email with details.
+The macro finds all rejected submissions and creates an email with details for further review.
+
+Sub SendRejectionEmail()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Submission Log")
+
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    Dim rejectList As String
+    Dim i As Long
+
+    ' Collect rejected files
+    For i = 2 To lastRow
+        If ws.Cells(i, 4).Value = "Rejected" Then
+            rejectList = rejectList & ws.Cells(i, 3).Value & " - " & ws.Cells(i, 2).Value & vbNewLine
+        End If
+    Next i
+
+    If rejectList = "" Then
+        MsgBox "No rejected submissions found!", vbInformation, "No Rejections"
+        Exit Sub
+    End If
+
+    ' Setup Outlook Email
+    Dim OutlookApp As Object
+    Dim OutlookMail As Object
+    Set OutlookApp = CreateObject("Outlook.Application")
+    Set OutlookMail = OutlookApp.CreateItem(0)
+
+    With OutlookMail
+        .To = "dataadmin@company.com" ' Replace with actual email
+        .CC = "complianceteam@company.com" ' Optional CC
+        .Subject = "Rejected XML Submissions - Review Required"
+        .Body = "The following XML submissions have been rejected:" & vbNewLine & vbNewLine & rejectList
+        .Display ' Change to .Send if you want to send immediately
+    End With
+
+    MsgBox "Rejection email prepared. Please review before sending.", vbInformation, "Email Ready"
+    
+    Set OutlookMail = Nothing
+    Set OutlookApp = Nothing
+End Sub
+
+-----------------------------------------------------------------------------------------------------------
+
+1. Import XML -	Load XML submission data into Excel	- Macro: ImportXMLData
+2. Log Submission	- Store details in tracking sheet	- Marco: LogXMLSubmission
+3. Review & Decide - Enter Accepted/Rejected in Excel field B2 - Macro: UpdateSubmissionStatus
+4. Filter Rejected	- View only rejected submissions	- Macro: FilterRejectedSubmissions
+5. Send Rejection Email -	Notify teams of rejected files	- Macro: SendRejectionEmail
+
+
