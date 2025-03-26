@@ -1,0 +1,58 @@
+*****XML to Excel Mapping Template*****
+
+***XML mapping to export Excel data to XML format for HEDIS submission***
+
+*This is example code and needs to be modified to the specifics within each quality measure*
+
+<?xml version="1.0" encoding="UTF-8"?>
+<ExcelXMLMapping>
+    <Mapping>
+        <ExcelColumn name="Patient ID" column="A" />
+        <XMLElement path="/PatientRecord/Patient/ID" dataType="String" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="First Name" column="B" />
+        <XMLElement path="/PatientRecord/Patient/FirstName" dataType="String" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Last Name" column="C" />
+        <XMLElement path="/PatientRecord/Patient/LastName" dataType="String" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Date of Birth" column="D" />
+        <XMLElement path="/PatientRecord/Patient/Demographics/DateOfBirth" dataType="Date" format="yyyy-MM-dd" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Gender" column="E" />
+        <XMLElement path="/PatientRecord/Patient/Demographics/Gender" dataType="String" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Phone Number" column="F" />
+        <XMLElement path="/PatientRecord/Patient/Contact/Phone" dataType="String" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Email" column="G" />
+        <XMLAttribute path="/PatientRecord/Patient/Contact" attribute="email" dataType="String" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Primary Diagnosis" column="H" />
+        <XMLElement path="/PatientRecord/Medical/Diagnoses/Primary" dataType="String" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Last Visit Date" column="I" />
+        <XMLElement path="/PatientRecord/Medical/LastVisitDate" dataType="Date" format="yyyy-MM-dd" />
+    </Mapping>
+
+    <Mapping>
+        <ExcelColumn name="Insurance Provider" column="J" />
+        <XMLElement path="/PatientRecord/Insurance/Provider" dataType="String" />
+    </Mapping>
+</ExcelXMLMapping>
