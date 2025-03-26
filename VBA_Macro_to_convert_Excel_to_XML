@@ -1,0 +1,99 @@
+| A = Measure | B = Age Group | C = Product Line | D = Eligible Population | E = Numerator | F = Exclusions | G = Phase (for ADD_E only: Initiation or Continuation) |
+
+Use "ADD_E" as the Measure name for the ADD-E measure.
+For ADD_E, specify the phase in column G ("Initiation" or "Continuation").
+Leave column G blank for AAB and AAP.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Sub ExportHEDISData_MultiMeasure()
+    Dim ws As Worksheet
+    Dim xmlFilePath As String
+    Dim fileNum As Integer
+    Dim lastRow As Long
+    Dim i As Long
+
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change as needed
+    xmlFilePath = Application.GetSaveAsFilename("HEDIS_Measures.xml", "XML Files (*.xml), *.xml")
+    If xmlFilePath = "False" Then Exit Sub
+
+    fileNum = FreeFile
+    Open xmlFilePath For Output As #fileNum
+
+    Print #fileNum, "<?xml version=""1.0"" encoding=""UTF-8""?>"
+    Print #fileNum, "<Measures>"
+
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    Dim currentMeasure As String
+    currentMeasure = ""
+
+    For i = 2 To lastRow
+        Dim measure As String, ageGroup As String, productLine As String
+        Dim eligible As String, numerator As String, exclusions As String
+        Dim phase As String
+        
+        measure = ws.Cells(i, 1).Value
+        ageGroup = ws.Cells(i, 2).Value
+        productLine = ws.Cells(i, 3).Value
+        eligible = ws.Cells(i, 4).Value
+        numerator = ws.Cells(i, 5).Value
+        exclusions = ws.Cells(i, 6).Value
+        phase = ws.Cells(i, 7).Value
+        
+        If measure <> currentMeasure Then
+            If currentMeasure <> "" Then
+                Print #fileNum, "  </" & currentMeasure & ">"
+            End If
+            Print #fileNum, "  <" & measure & " measure-version-id="""">"
+            Print #fileNum, "    <Metadata>"
+            Print #fileNum, "      <Benefit>" & productLine & "</Benefit>"
+            Print #fileNum, "    </Metadata>"
+            currentMeasure = measure
+        End If
+
+        If measure = "AAB" Then
+            Print #fileNum, "    <AvoidanceAntibioticTreatment>"
+            Print #fileNum, "      <Stratification><Age>" & ageGroup & "</Age></Stratification>"
+            Print #fileNum, "      <Data>"
+            Print #fileNum, "        <EligiblePopulation>" & eligible & "</EligiblePopulation>"
+            Print #fileNum, "        <ExclusionAdminRequired>" & exclusions & "</ExclusionAdminRequired>"
+            Print #fileNum, "        <NumeratorByAdmin>" & numerator & "</NumeratorByAdmin>"
+            Print #fileNum, "      </Data>"
+            Print #fileNum, "    </AvoidanceAntibioticTreatment>"
+        
+        ElseIf measure = "AAP" Then
+            Print #fileNum, "    <AdultAccessPreventiveCare>"
+            Print #fileNum, "      <Stratification><Age>" & ageGroup & "</Age></Stratification>"
+            Print #fileNum, "      <Data>"
+            Print #fileNum, "        <EligiblePopulation>" & eligible & "</EligiblePopulation>"
+            Print #fileNum, "        <ExclusionAdminRequired>" & exclusions & "</ExclusionAdminRequired>"
+            Print #fileNum, "        <NumeratorByAdmin>" & numerator & "</NumeratorByAdmin>"
+            Print #fileNum, "      </Data>"
+            Print #fileNum, "    </AdultAccessPreventiveCare>"
+        
+        ElseIf measure = "ADD_E" Then
+            Print #fileNum, "    <" & phase & ">"
+            Print #fileNum, "      <Data>"
+            Print #fileNum, "        <Denominator>" & eligible & "</Denominator>"
+            Print #fileNum, "        <ExclusionsByAdmin>" & exclusions & "</ExclusionsByAdmin>"
+            Print #fileNum, "        <NumeratorByAdmin>" & numerator & "</NumeratorByAdmin>"
+            Print #fileNum, "      </Data>"
+            Print #fileNum, "    </" & phase & ">"
+        End If
+    Next i
+
+    If currentMeasure <> "" Then
+        Print #fileNum, "  </" & currentMeasure & ">"
+    End If
+
+    Print #fileNum, "</Measures>"
+    Close #fileNum
+
+    MsgBox "XML created: " & xmlFilePath, vbInformation
+End Sub
+
+---------------------------------------------------------------------------------------------------------
+
+ADD_E uses <Denominator> instead of <EligiblePopulation>, and has Initiation/Continuation phases.
+You can add more logic to handle CaseManagement, EHR, etc., if needed.
+This generates clean XML and groups multiple entries under one <Measure> tag.
