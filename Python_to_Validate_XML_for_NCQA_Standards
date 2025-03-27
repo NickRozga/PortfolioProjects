@@ -1,0 +1,62 @@
+You’ll need NCQA’s official HEDIS XML Schema Definition (.xsd) file for the reporting year.
+
+pip install lxml --provides robust XML schema validation
+
+--single xml file--
+
+from lxml import etree
+
+# Load the schema
+with open("hedis_schema.xsd", 'rb') as schema_file:
+    schema_doc = etree.parse(schema_file)
+    schema = etree.XMLSchema(schema_doc)
+
+# Load your generated XML
+with open("hedis_output.xml", 'rb') as xml_file:
+    xml_doc = etree.parse(xml_file)
+
+# Validate
+if schema.validate(xml_doc):
+    print("✅ XML is valid according to NCQA's schema.")
+else:
+    print("❌ XML is INVALID!")
+    for error in schema.error_log:
+        print(f"Line {error.line}: {error.message}")
+
+--------------------------------------------------------------------
+
+--Script to Validate All XML Files in a Folder--
+
+import os
+from lxml import etree
+
+# Configurable paths
+XSD_FILE = "hedis_schema.xsd"
+XML_DIR = "xml_files"  # Folder containing your XML files
+
+# Load and compile the schema
+with open(XSD_FILE, 'rb') as schema_file:
+    schema_doc = etree.parse(schema_file)
+    schema = etree.XMLSchema(schema_doc)
+
+def validate_xml_file(file_path):
+    try:
+        with open(file_path, 'rb') as xml_file:
+            xml_doc = etree.parse(xml_file)
+            schema.assertValid(xml_doc)
+            print(f"✅ Valid: {os.path.basename(file_path)}")
+    except etree.DocumentInvalid as e:
+        print(f"❌ Invalid: {os.path.basename(file_path)}")
+        for error in schema.error_log:
+            print(f"   Line {error.line}: {error.message}")
+    except Exception as e:
+        print(f"⚠️ Error reading {os.path.basename(file_path)}: {e}")
+
+# Scan folder and validate each .xml file
+print(f"🔍 Validating XML files in '{XML_DIR}'...\n")
+for filename in os.listdir(XML_DIR):
+    if filename.endswith(".xml"):
+        validate_xml_file(os.path.join(XML_DIR, filename))
+
+
+# If XMLs use a namespace, modify the script to handle namespace-aware validation
