@@ -1,0 +1,36 @@
+CREATE PROCEDURE dbo.usp_GenerateHEDISXML
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        measure_code AS "@measure-code",
+        (
+            SELECT 
+                product_line AS [Metadata/Benefit],
+                (
+                    SELECT
+                        age_group AS [Stratification/Age],
+                        eligible_population AS [Data/EligiblePopulation],
+                        exclusion_admin_required AS [Data/ExclusionAdminRequired],
+                        numerator_by_admin AS [Data/NumeratorByAdmin]
+                    FOR XML PATH('AvoidanceAntibioticTreatment'), TYPE
+                )
+            FOR XML PATH(''), TYPE
+        )
+    FROM (
+        SELECT DISTINCT measure_code, product_line
+        FROM dbo.hedis_measure_data
+    ) m
+    OUTER APPLY (
+        SELECT *
+        FROM dbo.hedis_measure_data d
+        WHERE d.measure_code = m.measure_code
+          AND d.product_line = m.product_line
+        FOR XML PATH('AvoidanceAntibioticTreatment'), TYPE
+    ) stratified_data
+    FOR XML PATH('AAB'), ROOT('Measures'), TYPE;
+END
+
+
+EXEC dbo.usp_GenerateHEDISXML;
